@@ -1,20 +1,17 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useUser } from '../context/UserContext';
 
 export default function ProfilePage() {
+    const { user } = useUser();
+
+    // user null ise yükleniyor göster
+    if (!user) return <div className="p-6">Loading...</div>;
+
+    // Varsayılan state'leri user'dan al
     const [activeTab, setActiveTab] = useState("profile");
-
-    // Profile state
-    const [username, setUsername] = useState("buseokcu");
+    const [username, setUsername] = useState(user.username);
     const [newUsername, setNewUsername] = useState("");
-    const [profileImage, setProfileImage] = useState("https://i.pravatar.cc/150?img=3");
-
-    // Privacy state
-    const [isPrivate, setIsPrivate] = useState(false);
-    const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-
-    // Notification state
-    const [emailNotif, setEmailNotif] = useState(true);
-    const [smsNotif, setSmsNotif] = useState(false);
+    const [profileImage, setProfileImage] = useState(user.image || "https://i.pravatar.cc/150?img=3");
 
     const handleUsernameChange = () => {
         if (newUsername.trim()) {

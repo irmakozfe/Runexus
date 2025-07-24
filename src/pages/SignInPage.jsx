@@ -1,16 +1,35 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import api from '../api/api';
 
 
 export default function SignInPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Burada API isteği gönderilebilir
-        console.log('E-posta:', email);
-        console.log('Şifre:', password);
+
+        try {
+            const response = await api.post('/auth/login', {
+                email,
+                password
+            });
+
+            // 2️⃣ JWT token varsa buradan al
+            const token = response.data.token;
+            localStorage.setItem('token', token);
+
+            // 3️⃣ Axios'a default header olarak ekle
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+            // 4️⃣ Başarıyla giriş yaptıysa yönlendir
+            navigate('/events');
+        } catch (error) {
+            console.error('Giriş başarısız:', error);
+            alert("Giriş başarısız: " + (error.response?.data?.message || error.message));
+        }
     };
 
     return (

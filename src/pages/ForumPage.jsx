@@ -1,23 +1,11 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { EllipsisVerticalIcon } from "@heroicons/react/24/outline";
+import api from '../api/api';
 
 export default function ForumPage() {
     const currentUserId = 1;
 
-    const [entries, setEntries] = useState([
-        {
-            id: 1,
-            userId: 1,
-            title: "Morning Run Tips",
-            text: "What's your go-to routine before a run?",
-            edited: false,
-            comments: [
-                { id: 1, userId: 2, user: "Alice", text: "I always stretch for 10 minutes.", edited: false },
-                { id: 2, userId: 1, user: "You", text: "I prefer quick dynamic warm-ups.", edited: false }
-            ],
-        }
-    ]);
-
+    const [entries, setEntries] = useState([]);
     const [selectedEntry, setSelectedEntry] = useState(null);
     const [newComment, setNewComment] = useState("");
     const [dropdownOpenId, setDropdownOpenId] = useState(null);
@@ -26,6 +14,13 @@ export default function ForumPage() {
     const [editingText, setEditingText] = useState("");
     const [editingCommentId, setEditingCommentId] = useState(null);
     const [editingCommentText, setEditingCommentText] = useState("");
+
+    // ✅ ENTRIES backend'den yükleniyor
+    useEffect(() => {
+        api.get("/entries")
+            .then(res => setEntries(res.data))
+            .catch(err => console.error("Error fetching entries:", err));
+    }, []);
 
     useEffect(() => {
         const handleKey = (e) => {
@@ -42,33 +37,40 @@ export default function ForumPage() {
     }, []);
 
     const handleCardClick = (entry) => {
-        setSelectedEntry(entry);
+        setSelectedEntry({
+            ...entry,
+            comments: entry.comments || [],
+        });
         setEditingEntry(null);
         setEditingText("");
         setDropdownOpenId(null);
         setCommentDropdown(null);
     };
 
+
+    // ✅ YENİ YORUM backend'e gönderiliyor
     const handleAddComment = () => {
         if (!newComment.trim()) return;
-        const newCom = {
-            id: Date.now(),
-            userId: currentUserId,
-            user: "You",
-            text: newComment,
-            edited: false,
-        };
-        const updated = entries.map((e) =>
-            e.id === selectedEntry.id
-                ? { ...e, comments: [...e.comments, newCom] }
-                : e
-        );
-        setEntries(updated);
-        setSelectedEntry((prev) => ({
-            ...prev,
-            comments: [...prev.comments, newCom],
-        }));
-        setNewComment("");
+
+        api.post(`/entries/${selectedEntry.id}/comments`, { text: newComment })
+            .then(res => {
+                const savedComment = res.data;
+
+                const updated = entries.map((e) =>
+                    e.id === selectedEntry.id
+                        ? { ...e, comments: [...e.comments, savedComment] }
+                        : e
+                );
+                setEntries(updated);
+                setSelectedEntry(prev => ({
+                    ...prev,
+                    comments: [...prev.comments, savedComment],
+                }));
+                setNewComment("");
+            })
+            .catch(err => {
+                console.error("Failed to post comment:", err);
+            });
     };
 
     const handleDeleteEntry = (id) => {
